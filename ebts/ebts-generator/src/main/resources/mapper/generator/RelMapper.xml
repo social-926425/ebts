@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ebts.generator.dao.RelDao">
+
+    <resultMap id="RelTableResult" type="com.ebts.generator.entity.RelTable">
+        <result property="id" column="id"/>
+        <result property="tableId" column="table_id"/>
+        <result property="relName" column="rel_name"/>
+        <result property="relAs" column="rel_as"/>
+        <result property="tableName" column="table_name"/>
+        <result property="tableAs" column="table_as"/>
+        <result property="relComment" column="rel_comment"/>
+        <result property="relColumn" column="rel_column"/>
+        <result property="tableColumn" column="table_column"/>
+        <result property="relClass" column="rel_class"/>
+        <result property="relclass" column="relclass"/>
+        <result property="queryType" column="query_type"/>
+        <result property="sort" column="sort"/>
+        <result property="createBy" column="create_by"/>
+    </resultMap>
+    <resultMap id="RelTableColumnResult" type="com.ebts.generator.entity.RelTable" extends="RelTableResult">
+        <collection property="relColumns" notNullColumn="id" javaType="java.util.List" resultMap="RelColumnResult" />
+    </resultMap>
+    <resultMap id="RelColumnResult" type="com.ebts.generator.entity.RelColumn">
+        <result property="relId" column="rel_id"/>
+        <result property="columnName" column="column_name"/>
+        <result property="columnComment" column="column_comment"/>
+        <result property="columnType" column="column_type"/>
+        <result property="javaType" column="java_type"/>
+        <result property="javaField" column="java_field"/>
+        <result property="isList" column="is_list"/>
+        <result property="isQuery" column="is_query"/>
+        <result property="queryType" column="col_query_type"/>
+        <result property="htmlType" column="html_type"/>
+        <result property="dictType" column="dict_type"/>
+        <result property="sort" column="sorts"/>
+        <result property="createBy" column="create_by"/>
+    </resultMap>
+
+
+
+
+
+
+    <select id="tableInfos" resultType="java.util.HashMap">
+        select table_name, table_comment
+        from information_schema.tables
+        where table_schema = (select database())
+          AND table_name NOT LIKE 'qrtz_%'
+          AND table_name NOT LIKE 'gen_%'
+    </select>
+
+    <select id="selectTableColumn" resultType="com.ebts.generator.entity.RelColumn" parameterType="String">
+        select column_name, ordinal_position as sort, column_comment, column_type
+        from information_schema.columns
+        where table_schema = (select database())
+          and table_name = (#{tableName})
+        order by sort
+    </select>
+
+    <insert id="insertRelTables" parameterType="java.util.List">
+        insert into gen_rel_table(id, table_id, rel_name,rel_as,table_name,table_as, rel_comment,
+        rel_column, table_column, rel_class, relclass, query_type, sort, create_by)
+        values
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.id},#{item.tableId},#{item.relName},#{item.relAs},#{item.tableName},
+            #{item.tableAs},#{item.relComment},#{item.relColumn},#{item.tableColumn},#{item.relClass},
+            #{item.relclass},#{item.queryType},#{item.sort},#{item.createBy})
+        </foreach>
+    </insert>
+
+    <insert id="insertRelColumns" parameterType="java.util.List">
+        insert into gen_rel_column(rel_id, column_name, column_comment, column_type, java_type, java_field, is_list,
+        is_query, query_type, html_type, dict_type, sort, create_by)
+        values
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.relId},#{item.columnName},#{item.columnComment},#{item.columnType},
+            #{item.javaType},#{item.javaField},#{item.isList},#{item.isQuery},
+            #{item.queryType},#{item.htmlType},#{item.dictType},#{item.sort},
+            #{item.createBy})
+        </foreach>
+    </insert>
+    <select id="tableColumns" resultType="java.util.Map">
+        select column_name, column_comment
+        from information_schema.columns
+        where table_schema = (select database())
+          and table_name = (#{tableName})
+        order by ordinal_position
+    </select>
+
+    <select id="relTableByTableId" resultMap="RelTableColumnResult" parameterType="Long">
+        select grt.id, grt.table_id, grt.rel_name, grt.rel_as, grt.table_name, grt.table_as, grt.rel_comment, grt.rel_column, grt.table_column, grt.rel_class, grt.relclass, grt.query_type, grt.sort, grt.create_by,
+               grc.rel_id, grc.column_name, grc.column_comment, grc.column_type, grc.java_type, grc.java_field, grc.is_list, grc.is_query, grc.query_type as col_query_type, grc.html_type, grc.dict_type, grc.sort as sorts, grc.create_by
+        from gen_rel_table grt
+            left join gen_rel_column grc on grt.id = grc.rel_id
+        where grt.table_id = #{tableId}
+        order by grt.sort
+    </select>
+
+    <delete id="deleteRelColumnByRelId">
+        delete from gen_rel_column where rel_id = #{relId}
+    </delete>
+
+    <delete id="deleteRelTableByTableId">
+        delete from gen_rel_table where table_id = #{tableId}
+    </delete>
+
+</mapper>

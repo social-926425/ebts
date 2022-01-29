@@ -1,0 +1,153 @@
+package ${packageName}.entity;
+
+#foreach ($import in $importList)
+import ${import};
+#end
+#if($table.crud || $table.sub || $tplCategory.equals("rel"))
+    #set($Entity="BaseEntity")
+#elseif($table.tree)
+    #set($Entity="TreeEntity")
+#end
+#if($table.tplCategory.equals("rel"))
+import com.ebts.common.annotation.Excels;
+#elseif($table.tplCategory.equals("sub"))
+import ${packageName}.entity.${subClassName};
+#end
+import com.ebts.common.core.entity.${Entity};
+import com.ebts.common.annotation.Excel;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+
+/**
+ * ${functionName}对象 ${tableName}
+ * 
+ * @author ${author}
+ * @date ${datetime}
+ */
+#if($table.crud || $table.sub)
+#set($Entity="BaseEntity")
+#elseif($table.tree)
+#set($Entity="TreeEntity")
+#end
+@ApiModel("${functionName}")
+public class ${ClassName} extends ${Entity}{
+#foreach ($column in $columns)
+#if(!$table.isSuperColumn($column.javaField))
+
+    /** $column.columnComment */
+#if($column.list)
+#set($parentheseIndex=$column.columnComment.indexOf("（"))
+#if($parentheseIndex != -1)
+#set($comment=$column.columnComment.substring(0, $parentheseIndex))
+#else
+#set($comment=$column.columnComment)
+#end
+#if($parentheseIndex != -1)
+    @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
+#elseif($column.javaType == 'Date')
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @Excel(name = "${comment}", width = 30, dateFormat = "yyyy-MM-dd")
+#else
+    @Excel(name = "${comment}")
+#end
+#end
+    @ApiModelProperty("${column.columnComment}")
+    private $column.javaType $column.javaField;
+#end
+#end
+
+#if($table.sub)
+    /** $table.subTable.functionName信息 */
+    @ApiModelProperty("${table.subTable.functionName}信息")
+    private List<${subClassName}> ${subclassName}List;
+
+#elseif($tplCategory.equals("rel"))
+#foreach($table in $relTables)
+#foreach($column in $table.relColumns)
+#if($column.isList.equals("1"))
+#set($count = $count + 1)
+#end
+#end
+    #set($targetName = "")
+    #set($indexs = 0)
+#foreach($column in $table.relColumns)
+#if($column.isList.equals("1"))
+#set($parentheseIndex=$column.columnComment.indexOf("（"))
+#if($parentheseIndex != -1)
+#set($comment=$column.columnComment.substring(0, $parentheseIndex))
+#else
+#set($comment=$column.columnComment)
+#end
+#set($indexs = $indexs + 1)
+#set($targetName = $targetName + '@Excel(name = "'+$comment+'",targetAttr = "'+$column.javaField+'")')
+#if($indexs != $count)
+#set($targetName = $targetName + ",")
+#end
+#end
+#end
+
+    /**  ${table.relComment}信息 */
+    @Excels({${targetName}})
+    private ${table.relClass} ${table.relclass};
+#end
+
+#end
+
+#foreach ($column in $columns)
+#if(!$table.isSuperColumn($column.javaField))
+#if($column.javaField.length() > 2 && $column.javaField.substring(1,2).matches("[A-Z]"))
+#set($AttrName=$column.javaField)
+#else
+#set($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+#end
+    public void set${AttrName}($column.javaType $column.javaField){
+        this.$column.javaField = $column.javaField;
+    }
+
+    public $column.javaType get${AttrName}(){
+        return $column.javaField;
+    }
+#end
+#end
+
+#if($table.sub)
+    public List<${subClassName}> get${subClassName}List(){
+        return ${subclassName}List;
+    }
+
+    public void set${subClassName}List(List<${subClassName}> ${subclassName}List){
+        this.${subclassName}List = ${subclassName}List;
+    }
+#elseif($table.tplCategory.equals("rel"))
+#foreach($table in $relTables)
+    public ${table.relClass} get${table.relClass}(){
+        return ${table.relclass};
+    }
+
+    public void set${table.relClass}(${table.relClass} ${table.relclass}){
+        this.${table.relclass} = ${table.relclass};
+    }
+#end
+#end
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
+#foreach ($column in $columns)
+#if($column.javaField.length() > 2 && $column.javaField.substring(1,2).matches("[A-Z]"))
+#set($AttrName=$column.javaField)
+#else
+#set($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+#end
+            .append("${column.javaField}", get${AttrName}())
+#end
+#if($table.sub)
+            .append("${subclassName}List", get${subClassName}List())
+#elseif($tplCategory.equals("rel"))
+#foreach($table in $relTables)
+            .append("${table.relclass}",get${table.relClass}())
+#end
+#end
+            .toString();
+    }
+}

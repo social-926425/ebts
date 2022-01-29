@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ebts.generator.dao.ApiClassDao">
+    
+    <resultMap type="com.ebts.generator.entity.ApiClass" id="ApiclassResult">
+        <result property="id"    column="id"    />
+        <result property="mId"    column="m_id"    />
+        <result property="cName"    column="c_name"    />
+        <result property="cDescribe"    column="c_describe"    />
+        <result property="packageName"    column="package_name"    />
+        <result property="author"    column="author"    />
+        <result property="email"    column="email"    />
+        <result property="remark"    column="remark"    />
+        <result property="prefix"    column="prefix"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="updateBy"    column="update_by"    />
+    </resultMap>
+
+    <resultMap id="ApiclassModuleResult" type="com.ebts.generator.entity.ApiClass" extends="ApiclassResult">
+        <collection property="module" notNullColumn="id" javaType="com.ebts.generator.entity.Module" resultMap="ModuleResult" />
+    </resultMap>
+    <resultMap type="com.ebts.generator.entity.Module" id="ModuleResult">
+        <result property="id"    column="id"    />
+        <result property="mName"    column="m_name"    />
+        <result property="mDescribe"    column="m_describe"    />
+    </resultMap>
+    
+    <sql id="selectApiclassVo">
+        select id, m_id, c_name, c_describe, package_name, author, email, remark,prefix, create_time, create_by, update_time, update_by from gen_api_class
+    </sql>
+
+    <select id="selectApiclassList" parameterType="Apiclass" resultMap="ApiclassModuleResult">
+        select a.id,a.m_id,a.c_name,a.c_describe,a.package_name,a.author,a.email,a.prefix,a.remark,a.create_by,a.create_time,
+               a.update_time,a.update_by,m.id,m.m_name,m.m_describe
+        from gen_api_class a
+        left join gen_module m on a.m_id = m.id
+        <where>  
+            <if test="mId != null "> and a.m_id = #{mId}</if>
+            <if test="cName != null  and cName != ''"> and a.c_name like concat('%', #{cName}, '%')</if>
+            <if test="author != null  and author != ''"> and a.author like concat('%', #{author}, '%')</if>
+            <if test="email != null  and email != ''"> and a.email like concat('%', #{email}, '%')</if>
+            <if test="cDescribe != null  and cDescribe != ''"> and a.c_describe like concat('%', #{cDescribe}, '%')</if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != '' and params.endCreateTime != null and params.endCreateTime != ''"> and a.create_time between #{params.beginCreateTime} and #{params.endCreateTime}</if>
+        </where>
+    </select>
+    
+    <select id="selectApiclassById" parameterType="Long" resultMap="ApiclassResult">
+        <include refid="selectApiclassVo"/>
+        where id = #{id}
+    </select>
+        
+    <insert id="insertApiclass" parameterType="Apiclass" useGeneratedKeys="true" keyProperty="id">
+        insert into gen_api_class
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="mId != null">m_id,</if>
+            <if test="cName != null and cName != ''">c_name,</if>
+            <if test="cDescribe != null and cDescribe != ''">c_describe,</if>
+            <if test="packageName != null and packageName != ''">package_name,</if>
+            <if test="author != null and author != ''">author,</if>
+            <if test="email != null and email != ''">email,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+            <if test="prefix != null and prefix != ''">prefix,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="updateBy != null">update_by,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="mId != null">#{mId},</if>
+            <if test="cName != null and cName != ''">#{cName},</if>
+            <if test="cDescribe != null and cDescribe != ''">#{cDescribe},</if>
+            <if test="packageName != null and packageName != ''">#{packageName},</if>
+            <if test="author != null and author != ''">#{author},</if>
+            <if test="email != null and email != ''">#{email},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+            <if test="prefix != null and prefix != ''">#{prefix},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+         </trim>
+    </insert>
+
+    <update id="updateApiclass" parameterType="Apiclass">
+        update gen_api_class
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="mId != null">m_id = #{mId},</if>
+            <if test="cName != null and cName != ''">c_name = #{cName},</if>
+            <if test="cDescribe != null and cDescribe != ''">c_describe = #{cDescribe},</if>
+            <if test="packageName != null and packageName != ''">package_name = #{packageName},</if>
+            <if test="author != null and author != ''">author = #{author},</if>
+            <if test="email != null and email != ''">email = #{email},</if>
+            <if test="remark != null and remark != ''">remark = #{remark},</if>
+            <if test="prefix != null and prefix != ''">prefix = #{prefix},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteApiclassById" parameterType="Long">
+        delete from gen_api_class where id = #{id}
+    </delete>
+
+    <delete id="deleteApiclassByIds" parameterType="String">
+        delete from gen_api_class where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

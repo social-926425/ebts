@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ebts.generator.dao.UniQueryDao">
+
+    <resultMap type="com.ebts.generator.entity.UniQuery" id="UniQueryResult">
+        <result property="id"    column="id"    />
+        <result property="uqName"    column="uq_name"    />
+        <result property="uqSql"    column="uq_sql"    />
+        <result property="uqDescribe"    column="uq_describe"    />
+        <result property="isRelease"    column="is_release"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+
+    <sql id="selectUniQueryVo">
+        select id, uq_name, uq_sql, uq_describe, is_release, create_by, create_time, update_by, update_time from gen_uni_query
+    </sql>
+
+    <select id="selectUniQueryList" parameterType="UniQuery" resultMap="UniQueryResult">
+        <include refid="selectUniQueryVo"/>
+        <where>
+            <if test="uqName != null  and uqName != ''"> and uq_name like concat('%', #{uqName}, '%')</if>
+            <if test="uqDescribe != null  and uqDescribe != ''"> and uq_describe like concat('%', #{uqDescribe}, '%')</if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != '' and params.endCreateTime != null and params.endCreateTime != ''"> and create_time between #{params.beginCreateTime} and #{params.endCreateTime}</if>
+        </where>
+    </select>
+
+    <select id="selectUniQueryById" parameterType="Long" resultMap="UniQueryResult">
+        <include refid="selectUniQueryVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertUniQuery" parameterType="UniQuery" useGeneratedKeys="true" keyProperty="id">
+        insert into gen_uni_query
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="uqName != null and uqName != ''">uq_name,</if>
+            <if test="uqSql != null">uq_sql,</if>
+            <if test="uqDescribe != null and uqDescribe != ''">uq_describe,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="updateBy != null">update_by,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="uqName != null and uqName != ''">#{uqName},</if>
+            <if test="uqSql != null">#{uqSql},</if>
+            <if test="uqDescribe != null and uqDescribe != ''">#{uqDescribe},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+        </trim>
+    </insert>
+
+    <update id="updateUniQuery" parameterType="UniQuery">
+        update gen_uni_query
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="uqName != null and uqName != ''">uq_name = #{uqName},</if>
+            <if test="uqSql != null">uq_sql = #{uqSql},</if>
+            <if test="uqDescribe != null and uqDescribe != ''">uq_describe = #{uqDescribe},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteUniQueryById" parameterType="Long">
+        delete from gen_uni_query where id = #{id}
+    </delete>
+    
+    <delete id="deleteUniQueryByUqId" parameterType="Long">
+        delete from gen_uni_con where uq_id = #{id}
+    </delete>
+
+    <delete id="deleteUniQueryByIds" parameterType="String">
+        delete from gen_uni_query where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ebts.system.dao.RealQueryServiceDao">
+
+    <resultMap type="com.ebts.system.entity.RealUniQuery" id="RealUniQueryResult">
+        <result property="id"    column="id"    />
+        <result property="uqName"    column="uq_name"    />
+        <result property="uqSql"    column="uq_sql"    />
+        <result property="uqDescribe"    column="uq_describe"    />
+        <result property="isRelease"    column="is_release"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <resultMap type="com.ebts.system.entity.RealUniCon" id="RealUniConResult">
+        <result property="id"    column="uc_id"    />
+        <result property="uqId"    column="uq_id"    />
+        <result property="ucName"    column="uc_name"    />
+        <result property="ucKey"    column="uc_key"    />
+        <result property="ucCon"    column="uc_con"    />
+        <result property="ucMock"    column="uc_mock"    />
+        <result property="ucDescribe"    column="uc_describe"    />
+        <result property="ucType"    column="uc_type"    />
+        <result property="type"    column="type"    />
+    </resultMap>
+
+    <select id="queryRealInfo" parameterType="Long" resultMap="RealUniConResult">
+        select * from gen_uni_con where uq_id = #{id}
+    </select>
+    <sql id="selectUniQueryVo">
+        select id, uq_name, uq_sql, uq_describe, is_release, create_by, create_time, update_by, update_time from gen_uni_query
+    </sql>
+
+    <select id="selectRealUniQueryById" parameterType="Long" resultMap="RealUniQueryResult">
+        <include refid="selectUniQueryVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="realUniQuery" resultType="java.util.HashMap">
+        ${paramSQL}
+    </select>
+</mapper>

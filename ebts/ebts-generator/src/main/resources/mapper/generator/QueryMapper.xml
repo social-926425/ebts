@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ebts.generator.dao.QueryDao">
+    <resultMap type="com.ebts.generator.entity.UniQuery" id="QueryResult">
+        <result property="id"    column="id"    />
+        <result property="uqName"    column="uq_name"    />
+        <result property="uqSql"    column="uq_sql"    />
+        <result property="uqDescribe"    column="uq_describe"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="isRelease"    column="is_release"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <collection property="uniCons" javaType="java.util.List" notNullColumn="id" resultMap="UniConResult"/>
+    </resultMap>
+    <resultMap type="com.ebts.generator.entity.UniCon" id="UniConResult">
+        <result property="id"    column="uc_id"    />
+        <result property="uqId"    column="uq_id"    />
+        <result property="ucName"    column="uc_name"    />
+        <result property="ucKey"    column="uc_key"    />
+        <result property="ucCon"    column="uc_con"    />
+        <result property="ucMock"    column="uc_mock"    />
+        <result property="ucDescribe"    column="uc_describe"    />
+        <result property="ucType"    column="uc_type"    />
+        <result property="type"    column="type"    />
+    </resultMap>
+    <select id="UniQuery" resultType="java.util.HashMap">
+        ${paramSQL}
+    </select>
+    <delete id="deleteMenu">
+        delete from sys_menu where path = #{path}
+    </delete>
+    <insert id="insertMenu" parameterType="Menu">
+        insert into sys_menu(
+        <if test="menuId != null and menuId != 0">menu_id,</if>
+        <if test="parentId != null and parentId != 0">parent_id,</if>
+        <if test="menuName != null and menuName != ''">menu_name,</if>
+        <if test="orderNum != null and orderNum != ''">order_num,</if>
+        <if test="path != null and path != ''">path,</if>
+        <if test="component != null and component != ''">component,</if>
+        <if test="isFrame != null and isFrame != ''">is_frame,</if>
+        <if test="isCache != null and isCache != ''">is_cache,</if>
+        <if test="menuType != null and menuType != ''">menu_type,</if>
+        <if test="visible != null">visible,</if>
+        <if test="status != null">status,</if>
+        <if test="perms !=null and perms != ''">perms,</if>
+        <if test="icon != null and icon != ''">icon,</if>
+        <if test="remark != null and remark != ''">remark,</if>
+        <if test="createBy != null and createBy != ''">create_by,</if>
+        create_time
+        )values(
+        <if test="menuId != null and menuId != 0">#{menuId},</if>
+        <if test="parentId != null and parentId != 0">#{parentId},</if>
+        <if test="menuName != null and menuName != ''">#{menuName},</if>
+        <if test="orderNum != null and orderNum != ''">#{orderNum},</if>
+        <if test="path != null and path != ''">#{path},</if>
+        <if test="component != null and component != ''">#{component},</if>
+        <if test="isFrame != null and isFrame != ''">#{isFrame},</if>
+        <if test="isCache != null and isCache != ''">#{isCache},</if>
+        <if test="menuType != null and menuType != ''">#{menuType},</if>
+        <if test="visible != null">#{visible},</if>
+        <if test="status != null">#{status},</if>
+        <if test="perms !=null and perms != ''">#{perms},</if>
+        <if test="icon != null and icon != ''">#{icon},</if>
+        <if test="remark != null and remark != ''">#{remark},</if>
+        <if test="createBy != null and createBy != ''">#{createBy},</if>
+        sysdate()
+        )
+    </insert>
+    <select id="Release" resultType="Integer" parameterType="Long">
+        select is_release from gen_uni_query where id = #{id}
+    </select>
+    <update id="changeRelease" parameterType="com.ebts.generator.entity.UniQuery">
+        update gen_uni_query set is_release = #{isRelease} where id = #{id}
+    </update>
+
+    <select id="selectQueryInfo" parameterType="Long" resultMap="QueryResult">
+        select uq.id, uq.uq_name, uq.uq_sql, uq.uq_describe, uq.create_by, uq.is_release, uq.create_time, uq.update_by, uq.update_time,
+               uc.id as uc_id, uc.uq_id, uc.uc_name, uc.uc_key, uc.uc_con, uc.uc_mock, uc.uc_describe ,uc.uc_type,uc.type
+        from gen_uni_query uq
+                 left join gen_uni_con uc on uc.uq_id = uq.id
+        where uq.id = #{id}
+    </select>
+
+    <delete id="deleteUniCon">
+        delete from gen_uni_con where uq_id = #{uqId}
+    </delete>
+    <insert id="insertUniCon">
+        insert into gen_uni_con(uq_id,uc_name,uc_key,uc_con,uc_mock,uc_describe,uc_type,type) values
+        <foreach item="item" index="index" collection="list" separator=",">
+            (#{item.uqId},#{item.ucName},#{item.ucKey},#{item.ucCon},#{item.ucMock},#{item.ucDescribe},#{item.ucType},#{item.type})
+        </foreach>
+    </insert>
+
+</mapper>

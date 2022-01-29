@@ -1,0 +1,236 @@
+package ${packageName}.service.impl;
+
+import java.util.List;
+
+import com.ebts.common.constant.ReturnConstants;
+#foreach ($column in $columns)
+#if($column.javaField == 'createTime' || $column.javaField == 'updateTime')
+import com.ebts.common.utils.DateUtils;
+#end
+#if($column.javaField == 'updateBy' || $column.javaField == 'createBy')
+import com.ebts.common.utils.SecurityUtils;
+#end
+#end
+import com.ebts.common.utils.ServerResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+#if($table.sub)
+import java.util.ArrayList;
+import com.ebts.common.utils.StringUtils;
+import org.springframework.transaction.annotation.Transactional;
+import ${packageName}.entity.${subClassName};
+#end
+import ${packageName}.dao.${ClassName}Dao;
+import ${packageName}.entity.${ClassName};
+import ${packageName}.service.${ClassName}Service;
+
+/**
+ * ${functionName}Service业务层处理
+ * 
+ * @author ${author}
+ * @date ${datetime}
+ */
+@Service
+public class ${ClassName}ServiceImpl implements ${ClassName}Service {
+    private Logger logger = LoggerFactory.getLogger(${ClassName}ServiceImpl.class);
+
+    @Autowired
+    private ${ClassName}Dao ${className}Dao;
+
+    /**
+     * 查询${functionName}
+     * 
+     * @param ${pkColumn.javaField} ${functionName}ID
+     * @return ${functionName}
+     */
+    @Override
+    public ServerResult<${ClassName}> select${ClassName}ById(${pkColumn.javaType} ${pkColumn.javaField}) {
+        try {
+            ${ClassName} ${className} = ${className}Dao.select${ClassName}ById(${pkColumn.javaField});
+            if (${className} != null){
+                return new ServerResult<${ClassName}>(true,${className});
+            }else {
+                return new ServerResult<${ClassName}>(false, ReturnConstants.RESULT_EMPTY);
+            }
+        }catch (RuntimeException e){
+            logger.error(e.getMessage());
+            return new ServerResult<${ClassName}>(false,ReturnConstants.DB_EX);
+        }
+    }
+
+    /**
+     * 查询${functionName}列表
+     * 
+     * @param ${className} ${functionName}
+     * @return ${functionName}
+     */
+    @Override
+    public ServerResult<List<${ClassName}>> select${ClassName}List(${ClassName} ${className}) {
+        try {
+            List<${ClassName}> ${className}List = ${className}Dao.select${ClassName}List(${className});
+            if (${className}List.size()>0){
+                return new ServerResult<List<${ClassName}>>(true,${className}List);
+            }else {
+                return new ServerResult<List<${ClassName}>>(false,ReturnConstants.RESULT_EMPTY);
+            }
+        }catch (RuntimeException e){
+            logger.error(e.getMessage());
+            return new ServerResult<List<${ClassName}>>(false,ReturnConstants.DB_EX);
+        }
+    }
+
+    /**
+     * 新增${functionName}
+     * 
+     * @param ${className} ${functionName}
+     * @return 结果
+     */
+#if($table.sub)
+    @Transactional
+#end
+    @Override
+    public ServerResult<Integer> insert${ClassName}(${ClassName} ${className}) {
+        try {
+#foreach ($column in $columns)
+#if($column.javaField == 'createBy')
+            ${className}.setCreateBy(SecurityUtils.getUserId());
+#end
+#end
+#if($table.sub)
+            int renewal = ${className}Dao.insert${ClassName}(${className});
+            if (insert${subClassName}(${className})){
+                return new ServerResult<>(false,ReturnConstants.DB_EX);
+            }
+#else
+            Integer renewal = ${className}Dao.insert${ClassName}(${className});
+#end
+            if (renewal >0){
+                return new ServerResult<>(true,renewal);
+            }else {
+                return new ServerResult<>(false,ReturnConstants.SYS_FAILL);
+            }
+        }catch (RuntimeException e){
+            logger.error(e.getMessage());
+            return new ServerResult<>(false,ReturnConstants.DB_EX);
+        }
+    }
+
+    /**
+     * 修改${functionName}
+     * 
+     * @param ${className} ${functionName}
+     * @return 结果
+     */
+#if($table.sub)
+    @Transactional
+#end
+    @Override
+    public ServerResult<Integer> update${ClassName}(${ClassName} ${className}) {
+        try {
+#foreach ($column in $columns)
+#if($column.javaField == 'updateBy')
+            ${className}.setUpdateBy(SecurityUtils.getUserId());
+#end
+#end
+#if($table.sub)
+            ${className}Dao.delete${subClassName}By${subTableFkClassName}(${className}.get${pkColumn.capJavaField}());
+            if (insert${subClassName}(${className})){
+                return new ServerResult<>(false,ReturnConstants.DB_EX);
+            }
+#end
+            Integer renewal = ${className}Dao.update${ClassName}(${className});
+            if (renewal >0){
+                return new ServerResult<>(true,renewal);
+            }else {
+                return new ServerResult<>(false,ReturnConstants.SYS_FAILL);
+            }
+        }catch (RuntimeException e){
+            logger.error(e.getMessage());
+            return new ServerResult<>(false,ReturnConstants.DB_EX);
+        }
+    }
+
+    /**
+     * 批量删除${functionName}
+     * 
+     * @param ${pkColumn.javaField}s 需要删除的${functionName}ID
+     * @return 结果
+     */
+#if($table.sub)
+    @Transactional
+#end
+    @Override
+    public ServerResult<Integer> delete${ClassName}ByIds(${pkColumn.javaType}[] ${pkColumn.javaField}s) {
+        try {
+#if($table.sub)
+            //批量删除子表数据
+            ${className}Dao.delete${subClassName}By${subTableFkClassName}s(${pkColumn.javaField}s);
+#end
+            Integer renewal = ${className}Dao.delete${ClassName}ByIds(${pkColumn.javaField}s);
+            if (renewal >0){
+                return new ServerResult<>(true,renewal);
+            }else {
+                return new ServerResult<>(false,ReturnConstants.SYS_FAILL);
+            }
+        }catch (RuntimeException e){
+#if($table.sub)
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+#end
+            logger.error(e.getMessage());
+            return new ServerResult<>(false,ReturnConstants.DB_EX);
+        }
+    }
+
+    /**
+     * 删除${functionName}信息
+     * 
+     * @param ${pkColumn.javaField} ${functionName}ID
+     * @return 结果
+     */
+    @Override
+    public ServerResult<Integer> delete${ClassName}ById(${pkColumn.javaType} ${pkColumn.javaField}) {
+        try {
+#if($table.sub)
+        //删除子表数据
+        ${className}Dao.delete${subClassName}By${subTableFkClassName}(${pkColumn.javaField});
+#end
+            Integer renewal = ${className}Dao.delete${ClassName}ById(${pkColumn.javaField});
+            if (renewal >0){
+                return new ServerResult<>(true,renewal);
+            }else {
+                return new ServerResult<>(false,ReturnConstants.SYS_FAILL);
+            }
+        }catch (RuntimeException e){
+            logger.error(e.getMessage());
+            return new ServerResult<>(false,ReturnConstants.DB_EX);
+        }
+    }
+#if($table.sub)
+
+    /**
+     * 新增${subTable.functionName}信息
+     * 
+     * @param ${className} ${functionName}对象
+     */
+    public boolean insert${subClassName}(${ClassName} ${className}) {
+        List<${subClassName}> ${subclassName}List = ${className}.get${subClassName}List();
+        Long ${pkColumn.javaField} = ${className}.get${pkColumn.capJavaField}();
+        if (StringUtils.isNotNull(${subclassName}List)) {
+            List<${subClassName}> list = new ArrayList<${subClassName}>();
+            for (${subClassName} ${subclassName} : ${subclassName}List){
+                ${subclassName}.set${subTableFkClassName}(${pkColumn.javaField});
+                list.add(${subclassName});
+            }
+            if (list.size() > 0) {
+                Integer renewal = ${className}Dao.batch${subClassName}(list);
+                if (renewal>0){
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+#end
+}

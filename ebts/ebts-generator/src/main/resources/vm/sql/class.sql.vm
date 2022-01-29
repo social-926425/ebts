@@ -1,0 +1,18 @@
+-- ${functionName}Controller
+
+delete from sys_menu where perms= '${prefix}';
+
+insert into sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+values('${functionName}', 5, '1', '#','' ,1, 0, 'F', '0', '0',  '${prefix}','#', ${createBy}, sysdate(), 0, null, '${functionName}接口管理');
+
+SELECT @parentId := LAST_INSERT_ID();
+#foreach($column in $columns)
+#if($column.isGenerate.equals("1"))
+
+delete from sys_menu where perms= '${prefix}:${column.requrl}';
+
+insert into sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+values('${column.itDescribe}', @parentId, '1',  '#', '', 1, 0, 'F', '0', '0', '${prefix}:${column.requrl}', '#', ${createBy}, sysdate(), 0, null, '');
+#end
+#end
+

@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ebts.generator.dao.InterTableDao">
+
+    <resultMap type="com.ebts.generator.entity.InterTable" id="InterTableResult">
+        <result property="id"    column="id"    />
+        <result property="mId"    column="m_id"    />
+        <result property="cId"    column="c_id"    />
+        <result property="itName"    column="it_name"    />
+        <result property="itDescribe"    column="it_describe"    />
+        <result property="isPermission"    column="is_permission"    />
+        <result property="requrl"    column="requrl"    />
+        <result property="method"    column="method"    />
+        <result property="type"    column="type"    />
+        <result property="mName"    column="m_name"    />
+        <result property="isGenerate"    column="is_generate"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="createBy"    column="create_by"    />
+        <collection property="apiclass" javaType="com.ebts.generator.entity.ApiClass" resultMap="ModuleApiclassResult" notNullColumn="c_id"/>
+    </resultMap>
+    <resultMap type="com.ebts.generator.entity.ApiClass" id="ModuleApiclassResult">
+        <result property="id"    column="class_id"    />
+        <result property="mId"    column="m_id"    />
+        <result property="cName"    column="c_name"    />
+        <result property="cDescribe"    column="c_describe"    />
+        <result property="packageName"    column="package_name"    />
+        <result property="author"    column="author"    />
+        <result property="email"    column="email"    />
+        <result property="remark"    column="remark"    />
+        <result property="prefix"    column="prefix"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="updateBy"    column="update_by"    />
+    </resultMap>
+    <resultMap type="com.ebts.generator.entity.Module" id="ModuleResult">
+        <result property="id"    column="id"    />
+        <result property="mName"    column="m_name"    />
+        <result property="mDescribe"    column="m_describe"    />
+    </resultMap>
+    <resultMap type="com.ebts.generator.entity.ApiClass" id="ApiclassResult">
+        <result property="id"    column="id"    />
+        <result property="mId"    column="m_id"    />
+        <result property="cName"    column="c_name"    />
+        <result property="cDescribe"    column="c_describe"    />
+        <result property="packageName"    column="package_name"    />
+        <result property="author"    column="author"    />
+        <result property="email"    column="email"    />
+        <result property="remark"    column="remark"    />
+        <result property="prefix"    column="prefix"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <collection property="interTables" javaType="java.util.List" notNullColumn="id" resultMap="InterTableClassResult"/>
+        <collection property="module" javaType="com.ebts.generator.entity.Module" notNullColumn="m_id" resultMap="ModuleResult"/>
+    </resultMap>
+    <resultMap type="com.ebts.generator.entity.InterTable" id="InterTableClassResult">
+        <result property="id"    column="id"    />
+        <result property="mId"    column="m_id"    />
+        <result property="cId"    column="c_id"    />
+        <result property="itName"    column="it_name"    />
+        <result property="itDescribe"    column="it_describe"    />
+        <result property="isPermission"    column="is_permission"    />
+        <result property="requrl"    column="requrl"    />
+        <result property="method"    column="method"    />
+        <result property="type"    column="type"    />
+        <result property="mName"    column="m_name"    />
+        <result property="isGenerate"    column="is_generate"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="createBy"    column="create_by"    />
+    </resultMap>
+
+    <sql id="selectInterTableVo">
+        select id, m_id, c_id, it_name, it_describe, is_permission, requrl, method, is_generate, type, create_time, create_by from gen_inter_table
+    </sql>
+    <select id="selectInterTableClass" resultMap="ApiclassResult" parameterType="Long">
+        select sa.*, sit.*, sm.*
+        from gen_api_class sa
+        left join gen_inter_table sit on sit.c_id = sa.id
+        left join gen_module sm on sm.id = sa.m_id
+        where sa.id = #{id} and sit.type = 2
+    </select>
+
+    <select id="selectInterTableModule" resultMap="InterTableResult" parameterType="Long">
+        SELECT (select m_name from gen_module sm WHERE sm.id=sit.m_id) AS m_name, sit.*,
+               sa.id as class_id, sa.m_id, sa.c_name, sa.c_describe, sa.package_name, sa.author, sa.email, sa.prefix, sa.remark, sa.create_time, sa.create_by, sa.update_time, sa.update_by
+        from gen_inter_table sit
+                 LEFT JOIN gen_api_class sa ON sa.id = sit.c_id
+        WHERE sit.m_id=#{id} AND sit.type = 1;
+    </select>
+
+    <select id="selectInterTableList" parameterType="InterTable" resultMap="InterTableResult">
+        <include refid="selectInterTableVo"/>
+        <where>
+            <if test="mId != null "> and m_id = #{mId}</if>
+            <if test="cId != null "> and c_id = #{cId}</if>
+            <if test="itName != null  and itName != ''"> and it_name like concat('%',  #{itName}, '%')</if>
+            <if test="itDescribe != null  and itDescribe != ''"> and it_describe like concat('%',  #{itDescribe}, '%')</if>
+            <if test="isPermission != null "> and is_permission = #{isPermission}</if>
+            <if test="type != null "> and type = #{type}</if>
+            <if test="requrl != null  and requrl != ''"> and requrl like concat('%',  #{requrl}, '%')</if>
+            <if test="method != null  and method != ''"> and method = #{method}</if>
+            <if test="isGenerate != null "> and is_generate = #{isGenerate}</if>
+        </where>
+    </select>
+
+    <select id="selectInterTableById" parameterType="Long" resultMap="InterTableResult">
+        <include refid="selectInterTableVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertInterTables" parameterType="java.util.List">
+        insert into gen_inter_table (m_id, c_id, it_name, it_describe, is_permission, requrl, method, is_generate, type, create_by) VALUES
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.mId},#{item.cId},#{item.itName},#{item.itDescribe},#{item.isPermission},#{item.requrl},#{item.method},#{item.isGenerate},#{item.type},#{item.createBy})
+        </foreach>
+    </insert>
+    <delete id="deleteInterTableByClassId" parameterType="Long">
+        delete from gen_inter_table where c_id = #{cId} and type = 2
+    </delete>
+    <delete id="deleteInterTableByModuleId" parameterType="Long">
+        delete from gen_inter_table where c_id = #{cId} and type = 1
+    </delete>
+
+    <insert id="insertInterTable" parameterType="InterTable" useGeneratedKeys="true" keyProperty="id">
+        insert into gen_inter_table
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="mId != null">m_id,</if>
+            <if test="cId != null">c_id,</if>
+            <if test="itName != null">it_name,</if>
+            <if test="itDescribe != null">it_describe,</if>
+            <if test="isPermission != null">is_permission,</if>
+            <if test="requrl != null">requrl,</if>
+            <if test="method != null">method,</if>
+            <if test="type != null">type,</if>
+            <if test="isGenerate != null">is_generate,</if>
+            <if test="createBy != null">create_by,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="mId != null">#{mId},</if>
+            <if test="cId != null">#{cId},</if>
+            <if test="itName != null">#{itName},</if>
+            <if test="itDescribe != null">#{itDescribe},</if>
+            <if test="isPermission != null">#{isPermission},</if>
+            <if test="requrl != null">#{requrl},</if>
+            <if test="method != null">#{method},</if>
+            <if test="type != null">#{type},</if>
+            <if test="isGenerate != null">#{isGenerate},</if>
+            <if test="createBy != null">#{createBy},</if>
+        </trim>
+    </insert>
+
+    <update id="updateInterTable" parameterType="InterTable">
+        update gen_inter_table
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="mId != null">m_id = #{mId},</if>
+            <if test="cId != null">c_id = #{cId},</if>
+            <if test="itName != null">it_name = #{itName},</if>
+            <if test="itDescribe != null">it_describe = #{itDescribe},</if>
+            <if test="isPermission != null">is_permission = #{isPermission},</if>
+            <if test="requrl != null">requrl = #{requrl},</if>
+            <if test="method != null">method = #{method},</if>
+            <if test="type != null">type = #{type},</if>
+            <if test="isGenerate != null">is_generate = #{isGenerate},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteInterTableById" parameterType="Long">
+        delete from gen_inter_table where id = #{id}
+    </delete>
+
+    <delete id="deleteInterTableByIds" parameterType="String">
+        delete from gen_inter_table where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="${packageName}.dao.${ClassName}Dao">
+    
+    <resultMap type="${packageName}.entity.${ClassName}" id="${ClassName}Result">
+#foreach ($column in $columns)
+        <result property="${column.javaField}"    column="${column.columnName}"    />
+#end
+    </resultMap>
+#if($table.sub)
+
+    <resultMap id="${ClassName}${subClassName}Result" type="${packageName}.entity.${ClassName}" extends="${ClassName}Result">
+        <collection property="${subclassName}List" notNullColumn="${subTable.pkColumn.columnName}" javaType="java.util.List" resultMap="${subClassName}Result" />
+    </resultMap>
+
+    <resultMap type="${packageName}.entity.${subClassName}" id="${subClassName}Result">
+#foreach ($column in $subTable.columns)
+        <result property="${column.javaField}"    column="${column.columnName}"    />
+#end
+    </resultMap>
+#end
+#if($table.tplCategory.equals("rel"))
+    <resultMap id="${ClassName}AllResult" type="${packageName}.entity.${ClassName}" extends="${ClassName}Result">
+#foreach($table in $relTables)
+        <collection property="${table.relclass}" notNullColumn="${table.relColumn}" javaType="${packageName}.entity.${table.relClass}" resultMap="${table.relClass}Result" />
+#end
+    </resultMap>
+#foreach($table in $relTables)
+    <resultMap id="${table.relClass}Result" type="${packageName}.entity.${table.relClass}">
+#foreach($column in $table.relColumns)
+        <result property="${column.javaField}"    column="${column.columnName}"    />
+#end
+    </resultMap>
+#end
+
+#end
+    <sql id="select${ClassName}Vo">
+        select#foreach($column in $columns) $column.columnName#if($velocityCount != $columns.size()),#end#end from ${tableName}
+    </sql>
+
+
+#if($tplCategory.equals("rel"))
+    <select id="select${ClassName}List" parameterType="${ClassName}" resultMap="${ClassName}AllResult">
+        select #foreach($column in $columns) ${tableMapping}.$column.columnName#if($velocityCount != $columns.size()),#end#end,
+#foreach($table in $relTables)
+#set($count = 0)
+#foreach($column in $table.relColumns)
+#if($column.isList == "1")
+#set($count = $count + 1)
+#end
+#end
+#set($indexs = 0)
+            #foreach($column in $table.relColumns) #if($column.isList == "1")#set($indexs = $indexs + 1)${table.relAs}.$column.columnName#if($indexs != $count),#end#end#end#if($velocityCount != $relTables.size()),
+#end
+#end
+
+    from ${tableName} ${tableMapping}
+#foreach($table in $relTables)
+        ${table.queryType} join ${table.relName} ${table.relAs} on ${table.tableAs}.${table.tableColumn} = ${table.relAs}.${table.relColumn}
+#end
+        <where>
+#foreach($column in $columns)
+#set($queryType=$column.queryType)
+#set($javaField=$column.javaField)
+#set($javaType=$column.javaType)
+#set($columnName=$tableMapping+'.'+$column.columnName)
+#set($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+#if($column.query)
+#if($column.queryType == "EQ")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName = #{$javaField}</if>
+#elseif($queryType == "NE")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName != #{$javaField}</if>
+#elseif($queryType == "GT")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName &gt; #{$javaField}</if>
+#elseif($queryType == "GTE")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName &gt;= #{$javaField}</if>
+#elseif($queryType == "LT")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName &lt; #{$javaField}</if>
+#elseif($queryType == "LTE")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName &lt;= #{$javaField}</if>
+#elseif($queryType == "LIKE")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName like concat('%', #{$javaField}, '%')</if>
+#elseif($queryType == "BETWEEN")
+            <if test="params.begin$AttrName != null and params.begin$AttrName != '' and params.end$AttrName != null and params.end$AttrName != ''"> and $columnName between #{params.begin$AttrName} and #{params.end$AttrName}</if>
+#end
+#end
+#end
+#foreach($table in $relTables)
+#foreach($column in $table.relColumns)
+#set($queryType=$column.queryType)
+#set($javaField=$table.relclass + "." + $column.javaField)
+#set($javaType=$column.javaType)
+#set($columnName=$table.relAs+'.'+$column.columnName)
+#set($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+#if($column.isQuery.equals("1"))
+#if($column.queryType == "EQ")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName = #{$javaField}</if>
+#elseif($queryType == "NE")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName != #{$javaField}</if>
+#elseif($queryType == "GT")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName &gt; #{$javaField}</if>
+#elseif($queryType == "GTE")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName &gt;= #{$javaField}</if>
+#elseif($queryType == "LT")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName &lt; #{$javaField}</if>
+#elseif($queryType == "LTE")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName &lt;= #{$javaField}</if>
+#elseif($queryType == "LIKE")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName like concat('%', #{$javaField}, '%')</if>
+#elseif($queryType == "BETWEEN")
+            <if test="${table.relclass}.params.begin$AttrName != null and ${table.relclass}.params.begin$AttrName != '' and ${table.relclass}.params.end$AttrName != null and ${table.relclass}.params.end$AttrName != ''"> and $columnName between #{${table.relclass}.params.begin$AttrName} and #{${table.relclass}.params.end$AttrName}</if>
+#end
+#end
+#end
+#end
+#else
+    <select id="select${ClassName}List" parameterType="${ClassName}" resultMap="${ClassName}Result">
+        <include refid="select${ClassName}Vo"/>
+        <where>  
+#foreach($column in $columns)
+#set($queryType=$column.queryType)
+#set($javaField=$column.javaField)
+#set($javaType=$column.javaType)
+#set($columnName=$column.columnName)
+#set($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+#if($column.isQuery.equals("1"))
+#if($column.queryType == "EQ")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName = #{$javaField}</if>
+#elseif($queryType == "NE")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName != #{$javaField}</if>
+#elseif($queryType == "GT")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName &gt; #{$javaField}</if>
+#elseif($queryType == "GTE")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName &gt;= #{$javaField}</if>
+#elseif($queryType == "LT")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName &lt; #{$javaField}</if>
+#elseif($queryType == "LTE")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName &lt;= #{$javaField}</if>
+#elseif($queryType == "LIKE")
+            <if test="$javaField != null #if($javaType == 'String' ) and $javaField.trim() != ''#end"> and $columnName like concat('%', #{$javaField}, '%')</if>
+#elseif($queryType == "BETWEEN")
+            <if test="params.begin$AttrName != null and params.begin$AttrName != '' and params.end$AttrName != null and params.end$AttrName != ''"> and $columnName between #{params.begin$AttrName} and #{params.end$AttrName}</if>
+#end
+#end
+#end
+#end
+        </where>
+    </select>
+    
+    <select id="select${ClassName}ById" parameterType="${pkColumn.javaType}" resultMap="#if($table.sub)${ClassName}${subClassName}Result#else${ClassName}Result#end">
+#if($table.crud || $table.tree || $tplCategory.equals("rel"))
+        <include refid="select${ClassName}Vo"/>
+        where ${pkColumn.columnName} = #{${pkColumn.javaField}}
+#elseif($table.sub)
+        select#foreach($column in $columns) ${tableMapping}.$column.columnName#if($velocityCount != $columns.size()),#end#end,
+            #foreach($column in $subTable.columns) ${subMapping}.$column.columnName#if($velocityCount != $subTable.columns.size()),#end#end
+        from ${tableName} ${tableMapping}
+            left join ${subTableName} ${subMapping} on ${subMapping}.${subTableFkName} = ${tableMapping}.${pkColumn.columnName}
+        where ${tableMapping}.${pkColumn.columnName} = #{${pkColumn.javaField}}
+#end
+    </select>
+#if($tplCategory.equals("rel"))
+    <select id="select${ClassName}AllById" parameterType="${pkColumn.javaType}" resultMap="${ClassName}AllResult">
+        select #foreach($column in $columns) ${tableMapping}.$column.columnName#if($velocityCount != $columns.size()),#end#end,
+#foreach($table in $relTables)
+#set($count = 0)
+#foreach($column in $table.relColumns)
+#if($column.isList == "1")
+#set($count = $count + 1)
+#end
+#end
+#set($indexs = 0)
+            #foreach($column in $table.relColumns) #if($column.isList == "1")#set($indexs = $indexs + 1)${table.relAs}.$column.columnName#if($indexs != $count),#end#end#end#if($velocityCount != $relTables.size()),
+#end
+#end
+
+        from ${tableName} ${tableMapping}
+#foreach($table in $relTables)
+            ${table.queryType} join ${table.relName} ${table.relAs} on ${table.tableAs}.${table.tableColumn} = ${table.relAs}.${table.relColumn}
+#end
+        where ${tableMapping}.${pkColumn.columnName} = #{${pkColumn.javaField}}
+    </select>
+#end
+        
+    <insert id="insert${ClassName}" parameterType="${ClassName}"#if($pkColumn.increment) useGeneratedKeys="true" keyProperty="$pkColumn.javaField"#end>
+        insert into ${tableName}
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+#foreach($column in $columns)
+#if(($column.columnName != $pkColumn.columnName || !$pkColumn.increment) && $column.isInsert == 1)
+            <if test="$column.javaField != null#if($column.javaType == 'String' && $column.required) and $column.javaField != ''#end">$column.columnName,</if>
+#end
+#end
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+#foreach($column in $columns)
+#if(($column.columnName != $pkColumn.columnName || !$pkColumn.increment) && $column.isInsert == 1)
+            <if test="$column.javaField != null#if($column.javaType == 'String' && $column.required) and $column.javaField != ''#end">#{$column.javaField},</if>
+#end
+#end
+         </trim>
+    </insert>
+
+    <update id="update${ClassName}" parameterType="${ClassName}">
+        update ${tableName}
+        <trim prefix="SET" suffixOverrides=",">
+#foreach($column in $columns)
+#if($column.columnName != $pkColumn.columnName && $column.isInsert == 1)
+            <if test="$column.javaField != null#if($column.javaType == 'String' && $column.required) and $column.javaField != ''#end">$column.columnName = #{$column.javaField},</if>
+#end
+#end
+        </trim>
+        where ${pkColumn.columnName} = #{${pkColumn.javaField}}
+    </update>
+
+    <delete id="delete${ClassName}ById" parameterType="${pkColumn.javaType}">
+        delete from ${tableName} where ${pkColumn.columnName} = #{${pkColumn.javaField}}
+    </delete>
+
+    <delete id="delete${ClassName}ByIds" parameterType="String">
+        delete from ${tableName} where ${pkColumn.columnName} in 
+        <foreach item="${pkColumn.javaField}" collection="array" open="(" separator="," close=")">
+            #{${pkColumn.javaField}}
+        </foreach>
+    </delete>
+#if($table.sub)
+    
+    <delete id="delete${subClassName}By${subTableFkClassName}s" parameterType="String">
+        delete from ${subTableName} where ${subTableFkName} in 
+        <foreach item="${subTableFkclassName}" collection="array" open="(" separator="," close=")">
+            #{${subTableFkclassName}}
+        </foreach>
+    </delete>
+
+    <delete id="delete${subClassName}By${subTableFkClassName}" parameterType="Long">
+        delete from ${subTableName} where ${subTableFkName} = #{${subTableFkclassName}}
+    </delete>
+
+    <insert id="batch${subClassName}">
+        insert into ${subTableName}(#set($index = 0)#foreach($column in $subTable.columns)#if($column.isPk.equals("1"))#set($insex = 1)#else$column.columnName#if($velocityCount != ($subTable.columns.size()-$index)),#end#end#end) values
+		<foreach item="item" index="index" collection="list" separator=",">
+            (#foreach($column in $subTable.columns)#if($column.isPk.equals("1"))#set($index = 1)#else#{item.$column.javaField}#if($velocityCount != $subTable.columns.size()),#end#end#end)
+        </foreach>
+    </insert>
+#end
+</mapper>
